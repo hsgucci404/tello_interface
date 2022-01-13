@@ -7,6 +7,7 @@ import cv2                      # OpenCVを使うため
 
 # メイン関数
 def main():
+    # 初期化部
     # Telloクラスを使って，tellというインスタンス(実体)を作る
     tello = Tello(retry_count=1)    # 応答が来ないときのリトライ回数は1(デフォルトは3)
     tello.RESPONSE_TIMEOUT = 0.01   # コマンド応答のタイムアウトは短くした(デフォルトは7)
@@ -27,6 +28,7 @@ def main():
 
     time.sleep(0.5)     # 通信が安定するまでちょっと待つ
 
+    # ループ部
     # Ctrl+cが押されるまでループ
     try:
         # 永久ループで繰り返す
@@ -97,7 +99,7 @@ def main():
     except( KeyboardInterrupt, SystemExit):    # Ctrl+cが押されたらループ脱出
         print( "Ctrl+c を検知" )
 
-    # 終了処理
+    # 終了処理部
     cv2.destroyAllWindows()                             # すべてのOpenCVウィンドウを消去
     tello.set_video_direction(Tello.CAMERA_FORWARD)     # カメラは前方に戻しておく
     tello.streamoff()                                   # 画像転送を終了(熱暴走防止)
@@ -107,6 +109,6 @@ def main():
     del tello                                           # telloインスタンスを削除
 
 
-# "python main.py"として実行された時だけ動く様にするおまじない処理
+# "python3 main_core.py"として実行された時だけ動く様にするおまじない処理
 if __name__ == "__main__":      # importされると__name_に"__main__"は入らないので，pyファイルが実行されたのかimportされたのかを判断できる．
     main()    # メイン関数を実行
