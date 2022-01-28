@@ -59,7 +59,7 @@ def main():
                 small_image = cv2.rotate(small_image, cv2.ROTATE_90_CLOCKWISE)      # 90度回転して、画像の上を前方にする
 
             # (C) ここから画像処理
-            bgr_image = small_image
+            bgr_image = small_image    # small_imageをbgr_imageへコピー
 
             # トラックバーの値を取る
             r_min = cv2.getTrackbarPos("R_min", "OpenCV Window")
