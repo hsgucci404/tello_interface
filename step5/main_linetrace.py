@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from djitellopy import Tello    # DJITelloPyのTelloクラスをインポート
@@ -36,10 +36,10 @@ def main():
 
     # トラックバーの生成
     cv2.createTrackbar("H_min", "OpenCV Window", 0, 179, nothing)       # Hueの最大値は179
-    cv2.createTrackbar("H_max", "OpenCV Window", 179, 179, nothing)
-    cv2.createTrackbar("S_min", "OpenCV Window", 0, 255, nothing)
+    cv2.createTrackbar("H_max", "OpenCV Window", 15, 179, nothing)
+    cv2.createTrackbar("S_min", "OpenCV Window", 115, 255, nothing)
     cv2.createTrackbar("S_max", "OpenCV Window", 255, 255, nothing)
-    cv2.createTrackbar("V_min", "OpenCV Window", 0, 255, nothing)
+    cv2.createTrackbar("V_min", "OpenCV Window", 28, 255, nothing)
     cv2.createTrackbar("V_max", "OpenCV Window", 255, 255, nothing)
 
     # 自動モードフラグ
@@ -76,6 +76,8 @@ def main():
 
             # inRange関数で範囲指定２値化
             bin_image = cv2.inRange(hsv_image, (h_min, s_min, v_min), (h_max, s_max, v_max)) # HSV画像なのでタプルもHSV並び
+            kernel = np.ones((15,15),np.uint8)  # 15x15で膨張させる
+            bin_image = cv2.dilate(bin_image,kernel,iterations = 1)    # 膨張して虎ロープをつなげる
 
             # bitwise_andで元画像にマスクをかける -> マスクされた部分の色だけ残る
             result_image = cv2.bitwise_and(hsv_image, hsv_image, mask=bin_image)   # HSV画像 AND HSV画像 なので，自分自身とのANDは何も変化しない->マスクだけ効かせる
@@ -106,10 +108,6 @@ def main():
                 # ラベルを囲うバウンディングボックスを描画
                 cv2.rectangle(result_image, (x, y), (x+w, y+h), (255, 0, 255))
 
-                # 重心位置の座標を表示
-                #cv2.putText(result_image, "%d,%d"%(mx,my), (x-15, y+h+15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
-                cv2.putText(result_image, "%d"%(s), (x, y+h+15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
-
                 # 重心位置の座標と面積を表示
                 cv2.putText(result_image, "%d,%d"%(mx,my), (x-15, y+h+15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
                 cv2.putText(result_image, "%d"%(s), (x, y+h+30), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
@@ -119,18 +117,18 @@ def main():
                     b=30
 
                     # 制御式(ゲインは低めの0.3)
-                    dx = 0.3 * (240 - mx)       # 画面中心との差分
+                    dx = 0.4 * (240 - mx)       # 画面中心との差分
 
                     # 旋回方向の不感帯を設定
-                    d = 0.0 if abs(dx) < 20.0 else dx   # ±50未満ならゼロにする
+                    d = 0.0 if abs(dx) < 10.0 else dx   # ±50未満ならゼロにする
 
-                    d = -d
                     # 旋回方向のソフトウェアリミッタ(±100を超えないように)
                     d =  100 if d >  100.0 else d
                     d = -100 if d < -100.0 else d
 
+                    d = -d   # 旋回方向が逆だったので符号を反転
+
                     print('dx=%f'%(dx) )
-                    #drone.send_command('rc %s %s %s %s'%(int(a), int(b), int(c), int(d)) )
                     tello.send_rc_control( int(a), int(b), int(c), int(d) )
 
             # (X) ウィンドウに表示
@@ -205,6 +203,6 @@ def main():
     del tello                                           # telloインスタンスを削除
 
 
-# "python3 main_core.py"として実行された時だけ動く様にするおまじない処理
+# "python3 main_linetrace.py"として実行された時だけ動く様にするおまじない処理
 if __name__ == "__main__":      # importされると__name_に"__main__"は入らないので，pyファイルが実行されたのかimportされたのかを判断できる．
     main()    # メイン関数を実行
