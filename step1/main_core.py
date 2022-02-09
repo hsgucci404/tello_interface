@@ -23,8 +23,16 @@ def main():
     current_time = time.time()  # 現在時刻の保存変数
     pre_time = current_time     # 5秒ごとの'command'送信のための時刻変数
 
+    # SDKバージョンを問い合わせ
+    sdk_ver = tello.query_sdk_version()
+
+    # モータとカメラの切替フラグ
     motor_on = False                    # モータON/OFFのフラグ
     camera_dir = Tello.CAMERA_FORWARD   # 前方/下方カメラの方向のフラグ
+    
+    # SDK 3.0に対応していたら、カメラ方向を前方に
+    if sdk_ver == '30': 
+        tello.set_video_direction(Tello.CAMERA_FORWARD)     # カメラは前方
 
     time.sleep(0.5)     # 通信が安定するまでちょっと待つ
 
@@ -75,20 +83,22 @@ def main():
             elif key == ord('p'):           # ステータスをprintする
                 print(tello.get_current_state())
             elif key == ord('m'):           # モータ始動/停止を切り替え
-                if motor_on == False:       # 停止中なら始動 
-                    tello.turn_motor_on()
-                    motor_on = True
-                else:                       # 回転中なら停止
-                    tello.turn_motor_off()
-                    motor_on = False
+                if sdk_ver == '30':         # SDK 3.0に対応しているか？
+                    if motor_on == False:       # 停止中なら始動 
+                        tello.turn_motor_on()
+                        motor_on = True
+                    else:                       # 回転中なら停止
+                        tello.turn_motor_off()
+                        motor_on = False
             elif key == ord('c'):           # カメラの前方/下方の切り替え
-                if camera_dir == Tello.CAMERA_FORWARD:     # 前方なら下方へ変更
-                    tello.set_video_direction(Tello.CAMERA_DOWNWARD)
-                    camera_dir = Tello.CAMERA_DOWNWARD     # フラグ変更
-                else:                                      # 下方なら前方へ変更
-                    tello.set_video_direction(Tello.CAMERA_FORWARD)
-                    camera_dir = Tello.CAMERA_FORWARD      # フラグ変更
-                time.sleep(0.5)     # 映像が切り替わるまで少し待つ
+                if sdk_ver == '30':         # SDK 3.0に対応しているか？
+                    if camera_dir == Tello.CAMERA_FORWARD:     # 前方なら下方へ変更
+                        tello.set_video_direction(Tello.CAMERA_DOWNWARD)
+                        camera_dir = Tello.CAMERA_DOWNWARD     # フラグ変更
+                    else:                                      # 下方なら前方へ変更
+                        tello.set_video_direction(Tello.CAMERA_FORWARD)
+                        camera_dir = Tello.CAMERA_FORWARD      # フラグ変更
+                    time.sleep(0.5)     # 映像が切り替わるまで少し待つ
 
             # (Z) 10秒おきに'command'を送って、死活チェックを通す
             current_time = time.time()                          # 現在時刻を取得
@@ -101,7 +111,9 @@ def main():
 
     # 終了処理部
     cv2.destroyAllWindows()                             # すべてのOpenCVウィンドウを消去
-    tello.set_video_direction(Tello.CAMERA_FORWARD)     # カメラは前方に戻しておく
+    
+    if sdk_ver == '30':                                 # SDK 3.0に対応しているか？
+        tello.set_video_direction(Tello.CAMERA_FORWARD) # カメラは前方に戻しておく
     tello.streamoff()                                   # 画像転送を終了(熱暴走防止)
     frame_read.stop()                                   # 画像受信スレッドを止める
 
