@@ -30,9 +30,9 @@ def main():
     motor_on = False                    # モータON/OFFのフラグ
     camera_dir = Tello.CAMERA_FORWARD   # 前方/下方カメラの方向のフラグ
     
-    # SDK 3.0に対応していたら、カメラ方向を前方に
-    if sdk_ver == '30': 
-        tello.set_video_direction(Tello.CAMERA_FORWARD)     # カメラは前方
+    # 前回強制終了して下方カメラかもしれないので
+    if sdk_ver == '30':                                     # SDK 3.0に対応しているか？ 
+        tello.set_video_direction(Tello.CAMERA_FORWARD)     # カメラは前方に
 
     time.sleep(0.5)     # 通信が安定するまでちょっと待つ
 
