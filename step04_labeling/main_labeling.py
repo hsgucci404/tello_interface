@@ -35,7 +35,6 @@ def main():
     if sdk_ver == '30':                                     # SDK 3.0に対応しているか？ 
         tello.set_video_direction(Tello.CAMERA_FORWARD)     # カメラは前方に
 
-
     # トラックバーを作るため，まず最初にウィンドウを生成
     cv2.namedWindow("OpenCV Window")
 
@@ -112,7 +111,6 @@ def main():
                 # 重心位置の座標と面積を表示
                 cv2.putText(result_image, "%d,%d"%(mx,my), (x-15, y+h+15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
                 cv2.putText(result_image, "%d"%(s), (x, y+h+30), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
-
 
             # (4) ウィンドウに表示
             cv2.imshow('OpenCV Window', result_image)    # ウィンドウに表示するイメージを変えれば色々表示できる
