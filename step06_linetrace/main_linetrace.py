@@ -69,8 +69,8 @@ def main():
                 gray = cv2.equalizeHist( gray )
 
                 # 顔検出
-                faces = faceCascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=3, minSize=(10, 10))
-                
+                faces = faceCascade.detectMultiScale(gray, 1.1, 3, 0, (10, 10))
+
                 # 検出結果を格納
                 pre_faces = faces
 
