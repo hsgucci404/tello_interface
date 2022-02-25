@@ -181,7 +181,7 @@ def main():
     frame_read.stop()                                   # 画像受信スレッドを止める
 
     del tello.background_frame_read                     # フレーム受信のインスタンスを削除    
-    del tello
+    del tello                                           # telloインスタンスを削除
 
 # "python3 main_labeling.py"として実行された時だけ動く様にするおまじない処理
 if __name__ == "__main__":      # importされると__name_に"__main__"は入らないので，pyファイルが実行されたのかimportされたのかを判断できる．
