@@ -4,11 +4,17 @@
 from djitellopy import Tello    # DJITelloPyのTelloクラスをインポート
 import time                     # time.sleepを使いたいので
 import cv2                      # OpenCVを使うため
-import numpy as np              # ラベリングにNumPyが必要なので
 
 # メイン関数
 def main():
     # 初期化部
+    # カスケード分類器の初期化
+    cascPath = 'haarcascade_frontalface_alt.xml'    # 分類器データはローカルに置いた物を使う
+    faceCascade = cv2.CascadeClassifier(cascPath)   # カスケードクラスの作成
+
+    cnt_frame = 0   # フレーム枚数をカウントする変数
+    pre_faces = []  # 顔検出結果を格納する変数
+
     # Telloクラスを使って，tellというインスタンス(実体)を作る
     tello = Tello(retry_count=1)    # 応答が来ないときのリトライ回数は1(デフォルトは3)
     tello.RESPONSE_TIMEOUT = 0.01   # コマンド応答のタイムアウトは短くした(デフォルトは7)
@@ -35,21 +41,6 @@ def main():
     if sdk_ver == '30':                                     # SDK 3.0に対応しているか？ 
         tello.set_video_direction(Tello.CAMERA_FORWARD)     # カメラは前方に
 
-    # トラックバーを作るため，まず最初にウィンドウを生成
-    cv2.namedWindow("OpenCV Window")
-
-    # トラックバーのコールバック関数は何もしない空の関数
-    def nothing(x):
-        pass        # passは何もしないという命令
-
-    # トラックバーの生成
-    cv2.createTrackbar("H_min", "OpenCV Window", 0, 179, nothing)       # Hueの最大値は179
-    cv2.createTrackbar("H_max", "OpenCV Window", 15, 179, nothing)
-    cv2.createTrackbar("S_min", "OpenCV Window", 115, 255, nothing)
-    cv2.createTrackbar("S_max", "OpenCV Window", 255, 255, nothing)
-    cv2.createTrackbar("V_min", "OpenCV Window", 28, 255, nothing)
-    cv2.createTrackbar("V_max", "OpenCV Window", 255, 255, nothing)
-
     # 自動モードフラグ
     auto_mode = 0
 
@@ -71,76 +62,75 @@ def main():
                 small_image = cv2.rotate(small_image, cv2.ROTATE_90_CLOCKWISE)      # 90度回転して、画像の上を前方にする
 
             # (3) ここから画像処理
-            bgr_image = small_image[250:359,0:479]              # 注目する領域(ROI)を(0,250)-(479,359)で切り取る
-            hsv_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2HSV)  # BGR画像 -> HSV画像
+            # 5フレームに１回顔認識処理をする
+            if cnt_frame >= 5:
+                # 顔検出のためにグレイスケール画像に変換，ヒストグラムの平坦化もかける
+                gray = cv2.cvtColor(small_image, cv2.COLOR_BGR2GRAY)
+                gray = cv2.equalizeHist( gray )
 
-            # トラックバーの値を取る
-            h_min = cv2.getTrackbarPos("H_min", "OpenCV Window")
-            h_max = cv2.getTrackbarPos("H_max", "OpenCV Window")
-            s_min = cv2.getTrackbarPos("S_min", "OpenCV Window")
-            s_max = cv2.getTrackbarPos("S_max", "OpenCV Window")
-            v_min = cv2.getTrackbarPos("V_min", "OpenCV Window")
-            v_max = cv2.getTrackbarPos("V_max", "OpenCV Window")
+                # 顔検出
+                faces = faceCascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=3, minSize=(10, 10))
+                
+                # 検出結果を格納
+                pre_faces = faces
 
-            # inRange関数で範囲指定２値化
-            bin_image = cv2.inRange(hsv_image, (h_min, s_min, v_min), (h_max, s_max, v_max)) # HSV画像なのでタプルもHSV並び
-            kernel = np.ones((15,15),np.uint8)  # 15x15で膨張させる
-            bin_image = cv2.dilate(bin_image,kernel,iterations = 1)    # 膨張して虎ロープをつなげる
+                cnt_frame = 0   # フレーム枚数をリセット
 
-            # bitwise_andで元画像にマスクをかける -> マスクされた部分の色だけ残る
-            result_image = cv2.bitwise_and(hsv_image, hsv_image, mask=bin_image)   # HSV画像 AND HSV画像 なので，自分自身とのANDは何も変化しない->マスクだけ効かせる
+            # 顔の検出結果が空なら，何もしない
+            if len(pre_faces) == 0:
+                pass
+            else:   # 顔があるなら続けて処理
+                # 検出した顔に枠を書く
+                for (x, y, w, h) in pre_faces:
+                    cv2.rectangle(small_image, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
-            # 面積・重心計算付きのラベリング処理を行う
-            num_labels, label_image, stats, center = cv2.connectedComponentsWithStats(bin_image)
+                # １個めの顔のx,y,w,h,顔中心cx,cyを得る
+                x = pre_faces[0][0]
+                y = pre_faces[0][1]
+                w = pre_faces[0][2]
+                h = pre_faces[0][3]
+                cx = int( x + w/2 )
+                cy = int( y + h/2 )
 
-            # 最大のラベルは画面全体を覆う黒なので不要．データを削除
-            num_labels = num_labels - 1
-            stats = np.delete(stats, 0, 0)
-            center = np.delete(center, 0, 0)
-
-            if num_labels >= 1:
-                # 面積最大のインデックスを取得
-                max_index = np.argmax(stats[:,4])
-
-                # 面積最大のラベルのx,y,w,h,面積s,重心位置mx,myを得る
-                x = stats[max_index][0]
-                y = stats[max_index][1]
-                w = stats[max_index][2]
-                h = stats[max_index][3]
-                s = stats[max_index][4]
-                mx = int(center[max_index][0])
-                my = int(center[max_index][1])
-                #print("(x,y)=%d,%d (w,h)=%d,%d s=%d (mx,my)=%d,%d"%(x, y, w, h, s, mx, my) )
-
-                # ラベルを囲うバウンディングボックスを描画
-                cv2.rectangle(result_image, (x, y), (x+w, y+h), (255, 0, 255))
-
-                # 重心位置の座標と面積を表示
-                cv2.putText(result_image, "%d,%d"%(mx,my), (x-15, y+h+15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
-                cv2.putText(result_image, "%d"%(s), (x, y+h+30), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 0))
-
+                # 自動制御フラグが1の時だけ，Telloを動かす
                 if auto_mode == 1:
-                    a = b = c = d = 0
-                    b=30
+                    a = b = c = d = 0   # rcコマンドの初期値は0
 
-                    # P制御の式(ゲインは低めの0.3)
-                    dx = 0.4 * (240 - mx)       # 画面中心との差分
+                    # 目標位置との差分にゲインを掛ける（P制御)
+                    dx = 0.3 * (240 - cx)       # 画面中心との差分
+                    dy = 0.3 * (180 - cy)       # 画面中心との差分
+                    dw = 0.4 * (80 - w)        # 基準顔サイズ100pxとの差分
+
+                    dx = -dx # 制御方向が逆だったので，-1を掛けて逆転させた
+
+                    print('dx=%f  dy=%f  dw=%f'%(dx, dy, dw) )  # printして制御量を確認できるように
 
                     # 旋回方向の不感帯を設定
-                    d = 0.0 if abs(dx) < 10.0 else dx   # ±10未満ならゼロにする
-
+                    d = 0.0 if abs(dx) < 20.0 else dx   # ±20未満ならゼロにする
                     # 旋回方向のソフトウェアリミッタ(±100を超えないように)
                     d =  100 if d >  100.0 else d
                     d = -100 if d < -100.0 else d
 
-                    d = -d   # 旋回方向が逆だったので符号を反転
+                    # 前後方向の不感帯を設定
+                    b = 0.0 if abs(dw) < 10.0 else dw   # ±10未満ならゼロにする
+                    # 前後方向のソフトウェアリミッタ
+                    b =  100 if b >  100.0 else b
+                    b = -100 if b < -100.0 else b
 
-                    print('dx=%f'%(dx) )
+
+                    # 上下方向の不感帯を設定
+                    c = 0.0 if abs(dy) < 30.0 else dy   # ±30未満ならゼロにする
+                    # 上下方向のソフトウェアリミッタ
+                    c =  100 if c >  100.0 else c
+                    c = -100 if c < -100.0 else c
+
+                    # rcコマンドを送信
                     tello.send_rc_control( int(a), int(b), int(c), int(d) )
 
+            cnt_frame += 1  # フレームを+1枚
+
             # (4) ウィンドウに表示
-            cv2.imshow('OpenCV Window', result_image)    # ウィンドウに表示するイメージを変えれば色々表示できる
-            cv2.imshow('Binary Image', bin_image) 
+            cv2.imshow('OpenCV Window', small_image)    # ウィンドウに表示するイメージを変えれば色々表示できる
 
             # (5) OpenCVウィンドウでキー入力を1ms待つ
             key = cv2.waitKey(1) & 0xFF
@@ -214,6 +204,6 @@ def main():
     del tello                                           # telloインスタンスを削除
 
 
-# "python3 main_linetrace.py"として実行された時だけ動く様にするおまじない処理
+# "python3 main_face.py"として実行された時だけ動く様にするおまじない処理
 if __name__ == "__main__":      # importされると__name_に"__main__"は入らないので，pyファイルが実行されたのかimportされたのかを判断できる．
     main()    # メイン関数を実行
