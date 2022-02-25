@@ -125,7 +125,7 @@ def main():
                     dx = 0.3 * (240 - mx)       # 画面中心との差分
 
                     # 旋回方向の不感帯を設定
-                    d = 0.0 if abs(dx) < 20.0 else dx   # ±50未満ならゼロにする
+                    d = 0.0 if abs(dx) < 20.0 else dx   # ±20未満ならゼロにする
 
                     d = -d
                     # 旋回方向のソフトウェアリミッタ(±100を超えないように)
@@ -209,7 +209,7 @@ def main():
     frame_read.stop()                                   # 画像受信スレッドを止める
 
     del tello.background_frame_read                     # フレーム受信のインスタンスを削除    
-    del tello
+    del tello                                           # telloインスタンスを削除
 
 # "python3 main_color_tracking.py"として実行された時だけ動く様にするおまじない処理
 if __name__ == "__main__":      # importされると__name_に"__main__"は入らないので，pyファイルが実行されたのかimportされたのかを判断できる．
