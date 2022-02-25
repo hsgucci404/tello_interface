@@ -42,21 +42,21 @@ def main():
         # 永久ループで繰り返す
         while True:
 
-            # (A) 画像取得
+            # (1) 画像取得
             image = frame_read.frame    # 映像を1フレーム取得しimage変数に格納
 
-            # (B) 画像サイズ変更と、カメラ方向による回転
+            # (2) 画像サイズ変更と、カメラ方向による回転
             small_image = cv2.resize(image, dsize=(480,360) )   # 画像サイズを半分に変更
 
             if camera_dir == Tello.CAMERA_DOWNWARD:     # 下向きカメラは画像の向きが90度ずれている
                 small_image = cv2.rotate(small_image, cv2.ROTATE_90_CLOCKWISE)      # 90度回転して、画像の上を前方にする
 
-            # (C) ここから画像処理
+            # (3) ここから画像処理
 
-            # (X) ウィンドウに表示
+            # (4) ウィンドウに表示
             cv2.imshow('OpenCV Window', small_image)    # ウィンドウに表示するイメージを変えれば色々表示できる
 
-            # (Y) OpenCVウィンドウでキー入力を1ms待つ
+            # (5) OpenCVウィンドウでキー入力を1ms待つ
             key = cv2.waitKey(1) & 0xFF
             if key == 27:                   # key が27(ESC)だったらwhileループを脱出，プログラム終了
                 break
@@ -100,7 +100,7 @@ def main():
                         camera_dir = Tello.CAMERA_FORWARD      # フラグ変更
                     time.sleep(0.5)     # 映像が切り替わるまで少し待つ
 
-            # (Z) 10秒おきに'command'を送って、死活チェックを通す
+            # (6) 10秒おきに'command'を送って、死活チェックを通す
             current_time = time.time()                          # 現在時刻を取得
             if current_time - pre_time > 10.0 :                 # 前回時刻から10秒以上経過しているか？
                 tello.send_command_without_return('command')    # 'command'送信
@@ -114,6 +114,7 @@ def main():
     
     if sdk_ver == '30':                                 # SDK 3.0に対応しているか？
         tello.set_video_direction(Tello.CAMERA_FORWARD) # カメラは前方に戻しておく
+
     tello.streamoff()                                   # 画像転送を終了(熱暴走防止)
     frame_read.stop()                                   # 画像受信スレッドを止める
 
