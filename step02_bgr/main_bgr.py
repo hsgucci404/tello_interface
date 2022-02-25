@@ -153,6 +153,6 @@ def main():
     del tello                                           # telloインスタンスを削除
 
 
-# "python3 main_core.py"として実行された時だけ動く様にするおまじない処理
+# "python3 main_bgr.py"として実行された時だけ動く様にするおまじない処理
 if __name__ == "__main__":      # importされると__name_に"__main__"は入らないので，pyファイルが実行されたのかimportされたのかを判断できる．
     main()    # メイン関数を実行
