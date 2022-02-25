@@ -118,7 +118,7 @@ def main():
     tello.streamoff()                                   # 画像転送を終了(熱暴走防止)
     frame_read.stop()                                   # 画像受信スレッドを止める
 
-    del tello.background_frame_read                    # フレーム受信のインスタンスを削除    
+    del tello.background_frame_read                     # フレーム受信のインスタンスを削除    
     del tello                                           # telloインスタンスを削除
 
 
