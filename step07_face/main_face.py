@@ -57,11 +57,11 @@ def main():
             # 5フレームに１回顔認識処理をする
             if cnt_frame >= 5:
                 # 顔検出のためにグレイスケール画像に変換，ヒストグラムの平坦化もかける
-                gray = cv2.cvtColor(small_image, cv2.COLOR_BGR2GRAY)
-                gray = cv2.equalizeHist( gray )
+                gray_image = cv2.cvtColor(small_image, cv2.COLOR_BGR2GRAY)
+                gray_image = cv2.equalizeHist( gray_image )
 
                 # 顔検出
-                faces = faceCascade.detectMultiScale(gray, 1.1, 3, 0, (10, 10))
+                faces = faceCascade.detectMultiScale(gray_image, 1.1, 3, 0, (10, 10))
 
                 # 検出結果を格納
                 pre_faces = faces
