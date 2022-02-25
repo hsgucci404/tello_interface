@@ -101,7 +101,6 @@ def main():
             if num_labels >= 1:
                 # 面積最大のインデックスを取得
                 max_index = np.argmax(stats[:,4])
-                #print max_index
 
                 # 面積最大のラベルのx,y,w,h,面積s,重心位置mx,myを得る
                 x = stats[max_index][0]
